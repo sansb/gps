@@ -1,19 +1,62 @@
 function gpsPlane(divId){
-   //add new fields to raphaej elements
-   //not sure if this is necessary
-   Raphael.el.pointId = function(){
-      this.pointId;
-   };
-   Raphael.el.selected = function(){
-      this.selected;
-   };
-   Raphael.el.point1 = function(){
-      this.point1;
-   };
-   Raphael.el.point2 = function(){   
-      this.point2;
-   };
-
+	//add new fields to raphaej elements
+	//not sure if this is necessary
+	Raphael.el.pointId = function(){
+		this.pointId;
+	};
+	Raphael.el.selected = function(){
+		this.selected;
+	};
+	Raphael.el.point1 = function(){
+		this.point1;
+	};
+	Raphael.el.point2 = function(){   
+		this.point2;
+	};   
+	Raphael.el.pointMove = function(dx, dy){ 
+		this.attr({cx: this.ox + dx, cy: this.oy + dy});
+		pointUpdateLine(this.pointId, this.ox + dx, this.oy + dy);
+		pointUpdateMidpoint(this.pointId, this.ox + dx, this.oy + dy);
+	}
+	Raphael.el.pointStart = function(){ 
+		this.ox = this.attr("cx");
+		this.oy = this.attr("cy");
+		this.attr({opacity: 1});
+	}
+	Raphael.el.pointUp = function(){
+		this.attr({opacity: pointOpacity});
+		pointUpdateLine(this.pointId, this.attr("cx"), this.attr("cy"));
+		pointUpdateMidpoint(this.pointId, this.attr("cx"), this.attr("cy"));
+	}   
+	Raphael.el.lineMove = function(dx, dy){
+		pointArray[this.point1].pointMove(dx, dy);
+		pointArray[this.point2].pointMove(dx, dy);
+	}
+	Raphael.el.lineStart = function(){
+		pointArray[this.point1].pointStart();
+		pointArray[this.point2].pointStart();
+		this.attr({opacity: 1});
+	}
+	Raphael.el.lineUp = function(){
+		pointArray[this.point1].pointUp();
+		pointArray[this.point2].pointUp();
+		this.attr({opacity: pointOpacity});
+	}
+	Raphael.el.midpointMove = function(dx, dy){
+		pointArray[this.point1].pointMove(dx, dy);
+		pointArray[this.point2].pointMove(dx, dy);
+	}
+	Raphael.el.midpointStart = function(){
+		pointArray[this.point1].pointStart();
+		pointArray[this.point2].pointStart();
+		this.attr({opacity: 1});
+	}
+	Raphael.el.midpointUp = function(){
+		pointArray[this.point1].pointUp();
+		pointArray[this.point2].pointUp();
+		this.attr({opacity: pointOpacity});
+	}
+   
    //raphael object variables and instantiation
    var planeSize = 800;
    var pointSize = 10;
@@ -43,23 +86,8 @@ function gpsPlane(divId){
 	    numSelectedPoints -= 1;
 	 }
       });
-      c.drag(this.pointMove, this.pointStart, this.pointUp);
+      c.drag(c.pointMove, c.pointStart, c.pointUp);
       return c;
-   }
-   plane.circle.prototype.pointMove = function(dx, dy){ 
-      this.attr({cx: this.ox + dx, cy: this.oy + dy});
-      pointUpdateLine(this.pointId, this.ox + dx, this.oy + dy);
-      pointUpdateMidpoint(this.pointId, this.ox + dx, this.oy + dy);
-   }
-   plane.circle.prototype.pointStart = function(){ 
-      this.ox = this.attr("cx");
-      this.oy = this.attr("cy");
-      this.attr({opacity: 1});
-   }
-   plane.circle.prototype.pointUp = function(){
-      this.attr({opacity: pointOpacity});
-      pointUpdateLine(this.pointId, this.attr("cx"), this.attr("cy"));
-      pointUpdateMidpoint(this.pointId, this.attr("cx"), this.attr("cy"));
    }
    function pointExists(xPosition, yPosition){
       for(var i = 0, len = pointArray.length; i < len; i++){
@@ -76,34 +104,32 @@ function gpsPlane(divId){
    }
    function pointUpdateLine(pointId, newx, newy){
       for(var i = 0; i<lineArray.length; i++){
-	 if(lineArray[i].point1 === pointId){
-	    for(var j = 0; j<pointArray.length; j++){
-	       if(pointArray[j].pointId === lineArray[i].point2){
-		  var newpoint2 = pointArray[j].pointId;
-		  var oldx = pointArray[j].attr("cx");
-		  var oldy = pointArray[j].attr("cy");
-	       }
-	    }
-	    var newpoint1 = pointId;
-	    lineArray[i].remove();
-	    lineArray.splice(i, 1);
-	    var newpath = makeLine(newpoint1, newx, newy, newpoint2, oldx, oldy);
-	    lineArray.push(newpath);
-	 }
-	 else if(lineArray[i].point2 === pointId){
-	    for(var j = 0; j<pointArray.length; j++){
-	       if(pointArray[j].pointId === lineArray[i].point1){
-		  var newpoint2 = pointArray[j].pointId;
-		  var oldx = pointArray[j].attr("cx");
-		  var oldy = pointArray[j].attr("cy");
-	       }
-	    }
-	    var newpoint1 = pointId;
-	    lineArray[i].remove();
-	    lineArray.splice(i, 1);
-	    var newpath = makeLine(newpoint1, oldx, oldy, newpoint2, newx, newy);
-	    lineArray.push(newpath);
-	 }
+		if(lineArray[i].point1 === pointId){
+			for(var j = 0; j<pointArray.length; j++){
+				if(pointArray[j].pointId === lineArray[i].point2){
+					var newpoint2 = pointArray[j].pointId;
+					var oldx = pointArray[j].attr("cx");
+					var oldy = pointArray[j].attr("cy");
+				}
+			}
+			var newpoint1 = pointId;
+			lineArray[i].hide();
+			var newpath = makeLine(newpoint1, newx, newy, newpoint2, oldx, oldy);
+			lineArray.splice(i, 1, newpath);
+		}
+		else if(lineArray[i].point2 === pointId){
+			for(var j = 0; j<pointArray.length; j++){
+				if(pointArray[j].pointId === lineArray[i].point1){
+					var newpoint2 = pointArray[j].pointId;
+					var oldx = pointArray[j].attr("cx");
+					var oldy = pointArray[j].attr("cy");
+				}
+			}
+			var newpoint1 = pointId;
+			lineArray[i].hide();
+			var newpath = makeLine(newpoint1, oldx, oldy, newpoint2, newx, newy);
+			lineArray.splice(i, 1, newpath);
+		}
       }
    }
    function pointUpdateMidpoint(pointId, newx, newy){
@@ -117,10 +143,9 @@ function gpsPlane(divId){
 	       }
 	    }
 	    var newpoint1 = pointId;
-	    midpointArray[i].remove();
-	    midpointArray.splice(i, 1);
-	    var newMidpoint = makeMidpoint(newpoint1, newx, newy, newpoint2, oldx, oldy);
-	    midpointArray.push(newMidpoint);
+	    midpointArray[i].hide();
+		var newMidpoint = makeMidpoint(newpoint1, newx, newy, newpoint2, oldx, oldy);
+	    midpointArray.splice(i, 1, newMidpoint);
 	 }
 	 else if(midpointArray[i].point2 === pointId){
 	    for(var j = 0; j<pointArray.length; j++){
@@ -131,10 +156,9 @@ function gpsPlane(divId){
 	       }
 	    }
 	    var newpoint1 = pointId;
-	    midpointArray[i].remove();
-	    midpointArray.splice(i, 1);
-	    var newMidpoint = makeMidpoint(newpoint1, oldx, oldy, newpoint2, newx, newy);
-	    midpointArray.push(newMidpoint);
+	    midpointArray[i].hide();
+		var newMidpoint = makeMidpoint(newpoint1, oldx, oldy, newpoint2, newx, newy);
+	    midpointArray.splice(i, 1, newMidpoint);
 	 }
       }
    }
@@ -165,25 +189,9 @@ function gpsPlane(divId){
 			numSelectedLines -= 1;
 		     }
 		  });
-      newline.drag(lineMove, lineStart, lineUp);
+      newline.drag(newline.lineMove, newline.lineStart, newline.lineUp);
       pointsToFront();
       return newline;
-   }
-   function lineMove(dx, dy){
-      //need to remove old line and draw new one
-      //or just update the points and then the line...
-      pointArray[this.point1].pointMove(dx, dy);
-      pointArray[this.point2].pointMove(dx, dy);
-   }
-   function lineStart(){
-      this.attr({opacity: 1});
-      pointArray[this.point1].pointStart();
-      pointArray[this.point2].pointStart();
-   }
-   function lineUp(){
-      this.attr({opacity: pointOpacity});
-      this.point1.pointUp();
-      this.point2.pointUp();
    }
    function lineExists(point1, point2){
       for(var i=0; i<lineArray.length; i++){
@@ -241,17 +249,8 @@ function gpsPlane(divId){
 	    numSelectedMidpoints -= 1;
 	 }
       });
-      c.drag(midpointMove, midpointStart, midpointUp);
+      c.drag(c.midpointMove, c.midpointStart, c.midpointUp);
       return c;
-   }
-   function midpointMove(dx, dy){
-      return null;
-   }
-   function midpointStart(){
-      return null;
-   }
-   function midpointUp(){
-      return null;
    }
    function midpointExists(point1, point2){
       for(var i=0; i<midpointArray.length; i++){
@@ -283,11 +282,24 @@ function gpsPlane(divId){
 	 }   
       }
    }
+   
+   //circles
+   var circleArray = [];
+   var numCircles = 0;
+   var selectedCircleArray = [];
+   var numSelectedCircles = 0;
+   function makeCircle(){
+   
+   }
+   function newCircle(){
+	return null;
+   }
 
    //deleting 
    function deleteSelected(){
       deleteSelectedPoints();
       deleteSelectedLines();
+		deleteSelectedMidpoints();
    }
    function deleteSelectedLines(){
       var i = 0;
@@ -303,6 +315,22 @@ function gpsPlane(divId){
 	 }
       }
    }
+   
+   function deleteSelectedMidpoints(){
+      var i = 0;
+      while(i < midpointArray.length){
+	 if(midpointArray[i].selected === 1){
+	    midpointArray[i].remove();
+	    midpointArray.splice(i, 1);
+	    numSelectedLines -= 1;
+	    numLines -= 1;
+	 }
+	 else{
+	    i++;
+	 }
+      }
+   }
+   
    function deleteSelectedPoints(){
       var i = 0;
       while(i < pointArray.length){
@@ -311,6 +339,11 @@ function gpsPlane(divId){
 	    for(var j = 0; j < lineArray.length; j++){
 	       if(lineArray[j].point1 === pointArray[i].pointId || lineArray[j].point2 === pointArray[i].pointId){
 		  lineArray[j].selected = 1;
+	       }
+	    } 
+		for(var j = 0; j < midpointArray.length; j++){
+	       if(midpointArray[j].point1 === pointArray[i].pointId || midpointArray[j].point2 === pointArray[i].pointId){
+		  midpointArray[j].selected = 1;
 	       }
 	    } 
 	    pointArray[i].remove();
@@ -354,6 +387,7 @@ function gpsPlane(divId){
       var drawLineIconPos = iconSize * 0;
       var deleteIconPos = iconSize * 1;
       var midpointIconPos = iconSize * 2;
+	  var circleIconPos = iconSize * 3;
       plane.path("M0 " + iconSize + "L" + planeSize + " " + iconSize);
       //draw line
       plane.rect(drawLineIconPos, 0, iconSize, iconSize);
@@ -366,12 +400,18 @@ function gpsPlane(divId){
       plane.text(deleteIconPos + iconSize/2, iconSize/2 - 10, "Delete");
       plane.text(deleteIconPos + iconSize/2, iconSize/2 + 10, "Selected");
       plane.rect(deleteIconPos, 0, iconSize, iconSize).attr({fill:"black", opacity:"0.01"}).click(deleteSelected);
-
       ///midpoint
       plane.rect(midpointIconPos, 0, iconSize, iconSize);
       plane.circle(midpointIconPos + 10, iconSize/2, 5).attr({fill:"red"});
       plane.circle(midpointIconPos + iconSize - 10, iconSize/2, 5).attr({fill:"red"});
       plane.circle(midpointIconPos + iconSize/2, iconSize/2, 5).attr({fill:"black"});
       plane.rect(midpointIconPos, 0, iconSize, iconSize).attr({fill:"black", opacity:"0.01"}).click(newMidpoint);
+	  //circle
+	  plane.rect(circleIconPos, 0, iconSize, iconSize);
+	  plane.circle(circleIconPos + iconSize/2, iconSize/2, 5).attr({fill:"red"});
+	  plane.circle(circleIconPos + iconSize/2 + iconSize/2 - 10, iconSize/2, 5).attr({fill:"red"});
+	  plane.circle(circleIconPos + iconSize/2, iconSize/2, iconSize/2 - 10).attr({stroke:"black"});
+	  plane.rect(circleIconPos, 0, iconSize, iconSize).attr({fill:"black", opacity:"0.01"}).click(newCircle);
+	  
    }
 }
